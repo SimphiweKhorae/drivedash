@@ -29,16 +29,24 @@ drivedash/
 │ │ └── style.css
 │ └── js/
 └── README.md
+
+
 2️⃣ Create and activate a virtual environment
 -python -m venv venv
 -source venv/bin/activate   # macOS/Linux
 -venv\Scripts\activate      # Windows
+
+
 3️⃣ Install dependencies
 -pip install flask flask-mail itsdangerous
+
+
 4️⃣ Configure Gmail for Email Confirmation
 Open app.py and update these lines with your own Gmail address and a Gmail App Password:
+
 -app.config["MAIL_USERNAME"] = "your_email@gmail.com"
 app.config["MAIL_PASSWORD"] = "your_app_password"
+
 -⚠️ Important Notes:
 Gmail requires you to create an App Password (not your normal Gmail password).
 -Steps to generate:

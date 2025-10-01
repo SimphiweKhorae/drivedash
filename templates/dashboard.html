@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ride Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #f5f5f5; }
+    .dashboard { max-width: 800px; margin: 30px auto; }
+    .card { margin-bottom: 20px; }
+    .driver-circle {
+      width: 15px; height: 15px;
+      border-radius: 50%; display: inline-block;
+      margin-right: 5px;
+    }
+    .driver-online { background-color: #28a745; }
+    .driver-offline { background-color: #dc3545; }
+  </style>
+</head>
+<body>
+
+<div class="container dashboard">
+  <div class="text-center mb-4">
+    <h2>Welcome, {{ username }}!</h2>
+    <p class="text-muted">Your ride dashboard</p>
+  </div>
+
+  <!-- Current Ride Status -->
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <h5 class="card-title"><i class="fas fa-car"></i> Current Ride</h5>
+      <p class="card-text">No active rides. Book a ride to start!</p>
+      <a href="#" class="btn btn-primary"><i class="fas fa-taxi"></i> Book Ride</a>
+    </div>
+  </div>
+
+  <!-- Nearby Drivers -->
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <h5 class="card-title"><i class="fas fa-map-marker-alt"></i> Nearby Drivers</h5>
+      <ul class="list-group list-group-flush">
+        <li class="list-group-item">
+          <span class="driver-circle driver-online"></span> John D. - 1.2 km away
+        </li>
+        <li class="list-group-item">
+          <span class="driver-circle driver-offline"></span> Lisa M. - Offline
+        </li>
+        <li class="list-group-item">
+          <span class="driver-circle driver-online"></span> Ahmed K. - 0.9 km away
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="card shadow-sm">
+    <div class="card-body text-center">
+      <h5 class="card-title"><i class="fas fa-tools"></i> Quick Actions</h5>
+      <div class="d-flex justify-content-around mt-3">
+        <a href="#" class="btn btn-outline-primary"><i class="fas fa-history"></i> Ride History</a>
+       <!-- Profile Button (programmatic open) -->
+       <a id="openProfileBtn" href="#" class="btn btn-outline-success">
+        <i class="fas fa-user"></i> Profile
+        </a>
+  
+        <a href="{{ url_for('logout') }}" class="btn btn-outline-danger"><i class="fas fa-sign-out-alt"></i> Logout</a>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Profile Modal -->
+<div class="modal fade" id="profileModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fas fa-user"></i> Profile</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+  
+        <div class="modal-body">
+          <!-- We'll fill this dynamically. Start with placeholders. -->
+          <p><strong>Full Name:</strong> <span id="modalFullname">—</span></p>
+          <p><strong>Username:</strong> <span id="modalUsername">—</span></p>
+          <p><strong>Email:</strong> <span id="modalEmail">—</span></p>
+          <p><strong>Phone:</strong> <span id="modalPhone">—</span></p>
+        </div>
+  
+        <div class="modal-footer">
+          <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+<!-- IMPORTANT: Bootstrap JS bundle (includes Popper) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("openProfileBtn");
+  const modalEl = document.getElementById("profileModal");
+  const modal = bootstrap.Modal.getOrCreateInstance(modalEl); // bootstrap provided by bundle
+
+  const setLoadingState = () => {
+    document.getElementById("modalFullname").textContent = "Loading…";
+    document.getElementById("modalUsername").textContent = "Loading…";
+    document.getElementById("modalEmail").textContent = "Loading…";
+    document.getElementById("modalPhone").textContent = "Loading…";
+  };
+
+  const showError = (msg) => {
+    // Replace modal body with an error message (keeps footer)
+    const body = modalEl.querySelector(".modal-body");
+    body.innerHTML = `<div class="alert alert-danger mb-0">Error: ${msg}</div>`;
+  };
+
+  btn.addEventListener("click", async (e) => {
+    e.preventDefault();
+
+    // Put placeholders and show immediately
+    const body = modalEl.querySelector(".modal-body");
+    body.innerHTML = `
+      <p><strong>Full Name:</strong> <span id="modalFullname">Loading…</span></p>
+      <p><strong>Username:</strong> <span id="modalUsername">Loading…</span></p>
+      <p><strong>Email:</strong> <span id="modalEmail">Loading…</span></p>
+      <p><strong>Phone:</strong> <span id="modalPhone">Loading…</span></p>
+    `;
+
+    modal.show(); // open modal right away
+
+    // Then fetch profile data
+    try {
+      const res = await fetch("/get_profile", { credentials: "same-origin" });
+      if (!res.ok) {
+        // Try JSON message, otherwise status text
+        const err = await res.json().catch(() => null);
+        const msg = (err && err.error) ? err.error : res.statusText || `Status ${res.status}`;
+        showError(msg);
+        return;
+      }
+
+      const data = await res.json();
+      if (data.error) {
+        showError(data.error);
+        return;
+      }
+
+      // Put data into modal (restore standard body)
+      body.innerHTML = `
+        <p><strong>Full Name:</strong> <span id="modalFullname"></span></p>
+        <p><strong>Username:</strong> <span id="modalUsername"></span></p>
+        <p><strong>Email:</strong> <span id="modalEmail"></span></p>
+        <p><strong>Phone:</strong> <span id="modalPhone"></span></p>
+      `;
+      document.getElementById("modalFullname").textContent = data.fullname || "—";
+      document.getElementById("modalUsername").textContent = data.username || "—";
+      document.getElementById("modalEmail").textContent = data.email || "—";
+      document.getElementById("modalPhone").textContent = data.phone || "—";
+
+    } catch (err) {
+      showError("Network error. Try again.");
+      console.error("Fetch /get_profile error:", err);
+    }
+  });
+});
+</script>
+</body>
+</html>

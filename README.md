@@ -58,6 +58,7 @@ Enable 2-Step Verification.
 Under App Passwords, generate a new app password.
 
 Use that password in place of your Gmail password in app.py.
+
 5️⃣ Run the app
 python app.py
 The app will start on:http://127.0.0.1:5000/
